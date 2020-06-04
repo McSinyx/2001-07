@@ -3,6 +3,9 @@
 > What's the difference between me and you?    
 > You talk a good one, but you don't do what you supposed to do
 
+## Links
+This is the link of 110 repositories that can be copied. Click [here](https://github.com/topics/speaker-recognition)
+
 ## Sample Texts
 The link of the sample texts can be found [here].
 
