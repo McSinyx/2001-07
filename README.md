@@ -38,6 +38,7 @@ data set with compatible layout can be found [here][gender data].
    of a plant.  Flowers have petals.  Inside the part of the flower that has
    petals are the parts which produce pollen and seeds.  Flowers may grow
    separately on the plant, or they may grow together in an inflorescence.
+4. [Dialogue] from 1 to 10.
 
 ### Small Talk
 
@@ -51,3 +52,4 @@ data set with compatible layout can be found [here][gender data].
 [gender data]: https://drive.google.com/open?id=1u28uP2TlL0c-VKNj3eEw9-NdsOhx-XXq
 [GitHub topic]: https://github.com/topics/speaker-recognition
 [Mel-frequency cepstrum]: https://en.wikipedia.org/wiki/Mel-frequency_cepstrum
+[Dialogue]: https://www.eslfast.com/easydialogs/dailylife.htm
