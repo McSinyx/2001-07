@@ -22,14 +22,14 @@ from glob import iglob
 from os.path import basename, join
 from pickle import load
 
-from scipy.io.wavfile import read
 from python_speech_features import mfcc
+from scipy.io.wavfile import read
 from sklearn.preprocessing import scale
 
 
 def features(rate, data):
     """Extract MFCC features from the given audio."""
-    return scale(mfcc(data, rate, appendEnergy=False))
+    return scale(mfcc(data, rate, nfft=2048, appendEnergy=False))
 
 
 if __name__ == '__main__':
@@ -41,6 +41,6 @@ if __name__ == '__main__':
     for model in iglob(join(args.models, '*')):
         with open(model, 'rb') as f: models[basename(model)] = load(f)
     for audio in iglob(join(args.data, '*', '*.wav')):
-        scores = {name: model.score(features(*read(audio)))
-                  for name, model in models.items()}
+        test = features(*read(audio))
+        scores = {name: model.score(test) for name, model in models.items()}
         print(audio, max(scores, key=scores.get))

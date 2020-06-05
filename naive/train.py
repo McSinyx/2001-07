@@ -32,7 +32,7 @@ from sklearn.preprocessing import scale
 
 def features(rate, data):
     """Extract MFCC features from the given audio."""
-    return scale(mfcc(data, rate, appendEnergy=False))
+    return scale(mfcc(data, rate, nfft=2048, appendEnergy=False))
 
 
 def train(individuals):
