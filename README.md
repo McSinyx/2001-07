@@ -1,12 +1,25 @@
 # Speaker Recognition Experiments
+
 > What's the difference between me and you?    
 > You talk a good one, but you don't do what you supposed to do
 
-## References
-* [GitHub topic](https://github.com/topics/speaker-recognition)
+## Experiments
+
+[GitHub topic] is a good start for exploration.
+
+### naive
+
+    usage: naive/train.py [-h] source dest
+    usage: naive/test.py [-h] models data
+
+This approach extract [Mel-frequency cepstrum] from audios and try to score
+the sample directly, as use by [PyGender-Voice][gender blog].  The original
+data set with compatible layout can be found [here][gender data].
 
 ## Sample Texts
+
 ### Paragraphs
+
 1. The doctor is a person who looks after the sick people and prescribes
    medicines so that the patient recovers fast.  In order to become a doctor,
    a person has to study medicine.  Doctors lead a hard life.  Their life
@@ -27,8 +40,14 @@
    separately on the plant, or they may grow together in an inflorescence.
 
 ### Small Talk
+
 * Morning, Paul.
 * Oh, morning, William, how are you?
-* Fine, thanks. Have a good weekend.
-* Yes, thanks. Catch you later.
+* Fine, thanks.  Have a good weekend.
+* Yes, thanks.  Catch you later.
 * OK, see you.
+
+[gender blog]: https://appliedmachinelearning.wordpress.com/2017/06/14/voice-gender-detection-using-gmms-a-python-primer/
+[gender data]: https://drive.google.com/open?id=1u28uP2TlL0c-VKNj3eEw9-NdsOhx-XXq
+[GitHub topic]: https://github.com/topics/speaker-recognition
+[Mel-frequency cepstrum]: https://en.wikipedia.org/wiki/Mel-frequency_cepstrum
