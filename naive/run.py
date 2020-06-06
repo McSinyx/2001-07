@@ -24,6 +24,12 @@ from sounddevice import InputStream, query_devices
 
 from .helpers import features, models
 
+NAMES = {'BI9-046': 'Vũ Vương Quốc Anh', 'BI9-084': 'Nguyễn Trường Giang',
+         'BI9-108': 'Nguyễn Minh Hoàng', 'BI9-146': 'Phạm Minh Long',
+         'BI9-163': 'Đỗ Đức Mạnh', 'BI9-184': 'Nguyễn Gia Phong',
+         'BI9-205': 'Hoàng Nhật Tân', 'BI9-239': 'Trần Minh Vương',
+         'BI8-174': 'Nguyễn An Thiết'}
+
 
 class DeviceLister(Action):
     """CLI action to print available audio devices and exit."""
@@ -50,6 +56,6 @@ if __name__ == '__main__':
             callback=lambda i, f, t, s: audio.append(concatenate(i))):
             input('hit return to stop recording')
             test = features(44100, concatenate(audio))
-            scores = {name: model.score(test)
-                      for name, model in choices.items()}
-            print(max(scores, key=scores.get))
+        scores = {name: model.score(test) for name, model in choices.items()}
+        ID = max(scores, key=scores.get)
+        print(ID, NAMES[ID])
