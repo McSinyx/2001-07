@@ -1,3 +1,10 @@
+branches:
+  only: master
 language: python
 install: pip install tox
-script: tox
+script:
+  - |
+    for f in */*/*.wav
+    do file $f | grep -q mono\ 44100
+    done
+  - tox
