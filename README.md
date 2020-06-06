@@ -10,8 +10,9 @@
 
 ### naive
 
-    usage: naive/train.py [-h] source dest
-    usage: naive/test.py [-h] models data
+    usage: python -m naive.train [-h] source dest
+    usage: python -m naive.test [-h] models data
+    usage: python -m naive.run [-h] [-l] [-d DEVICE] models
 
 This approach extract [Mel-frequency cepstrum] from audios and try to score
 the sample directly, as use by [PyGender-Voice][gender blog].  The original

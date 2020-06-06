@@ -1,4 +1,4 @@
-# Identify speaker using given MFCC features
+# Helper functions
 # Copyright (C) 2020  Nguyễn Gia Phong
 #
 # This file is part of speakerid
@@ -16,21 +16,22 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with speakerid.  If not, see <https://www.gnu.org/licenses/>.
 
-from argparse import ArgumentParser
 from glob import iglob
-from os.path import join
+from os.path import basename, join
+from pickle import load
 
-from scipy.io.wavfile import read
+from python_speech_features import mfcc
+from sklearn.preprocessing import scale
 
-from .helpers import features, models
 
-if __name__ == '__main__':
-    parser = ArgumentParser()
-    parser.add_argument('models', help='path to models')
-    parser.add_argument('data', help='path to test data')
-    args = parser.parse_args()
-    choices = models(args.models)
-    for audio in iglob(join(args.data, '*', '*.wav')):
-        test = features(*read(audio))
-        scores = {name: model.score(test) for name, model in choices.items()}
-        print(audio, max(scores, key=scores.get))
+def features(rate, data):
+    """Extract MFCC features from the given audio."""
+    return scale(mfcc(data, rate, nfft=2048, appendEnergy=False))
+
+
+def models(path):
+    """Load models from the given directory."""
+    models = {}
+    for model in iglob(join(path, '*')):
+        with open(model, 'rb') as f: models[basename(model)] = load(f)
+    return models

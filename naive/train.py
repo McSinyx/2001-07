@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Create models from extracted voice features
 # Copyright (C) 2020  Nguyễn Gia Phong
 #
@@ -24,15 +23,10 @@ from os.path import basename, join
 from pickle import dump
 
 from numpy import concatenate
-from python_speech_features import mfcc
 from scipy.io.wavfile import read
 from sklearn.mixture import GaussianMixture
-from sklearn.preprocessing import scale
 
-
-def features(rate, data):
-    """Extract MFCC features from the given audio."""
-    return scale(mfcc(data, rate, nfft=2048, appendEnergy=False))
+from .helpers import features
 
 
 def train(individuals):
