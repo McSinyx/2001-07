@@ -3,6 +3,7 @@
 > What's the difference between me and you?    
 > You talk a good one, but you don't do what you supposed to do
 
+
 ## Experiments
 
 [GitHub topic] is a good start for exploration.
@@ -16,7 +17,8 @@ This approach extract [Mel-frequency cepstrum] from audios and try to score
 the sample directly, as use by [PyGender-Voice][gender blog].  The original
 data set with compatible layout can be found [here][gender data].
 
-## Sample Texts
+
+## Data
 
 ### Paragraphs
 
@@ -38,7 +40,6 @@ data set with compatible layout can be found [here][gender data].
    of a plant.  Flowers have petals.  Inside the part of the flower that has
    petals are the parts which produce pollen and seeds.  Flowers may grow
    separately on the plant, or they may grow together in an inflorescence.
-4. [Dialogue] from 1 to 10.
 
 ### Small Talk
 
@@ -48,8 +49,21 @@ data set with compatible layout can be found [here][gender data].
 * Yes, thanks.  Catch you later.
 * OK, see you.
 
+Note: this one should be numbered as 4.
+
+### Dialogues
+
+Daily life [dialogues] number 5, 6, 8, 9 and 10.
+
+
+## Tests
+
+### Dialogues
+
+Daily life [dialogues] number 1, 2, 3, 4 and 7.
+
 [gender blog]: https://appliedmachinelearning.wordpress.com/2017/06/14/voice-gender-detection-using-gmms-a-python-primer/
 [gender data]: https://drive.google.com/open?id=1u28uP2TlL0c-VKNj3eEw9-NdsOhx-XXq
 [GitHub topic]: https://github.com/topics/speaker-recognition
 [Mel-frequency cepstrum]: https://en.wikipedia.org/wiki/Mel-frequency_cepstrum
-[Dialogue]: https://www.eslfast.com/easydialogs/dailylife.htm
+[dialogues]: https://www.eslfast.com/easydialogs/dailylife.htm
