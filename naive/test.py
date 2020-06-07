@@ -19,18 +19,29 @@
 from argparse import ArgumentParser
 from glob import iglob
 from os.path import join
+from statistics import mean
 
 from scipy.io.wavfile import read
 
 from .helpers import features, models
 
+
+def score(choices, audios, verbose):
+    """Return an iterator of the correctness of each guess."""
+    for audio in audios:
+        test = features(*read(audio))
+        scores = {name: model.score(test) for name, model in choices.items()}
+        guess = max(scores, key=scores.get)
+        if verbose: print(audio, guess)
+        yield guess in audio
+
+
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('models', help='path to models')
     parser.add_argument('data', help='path to test data')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='give more output')
     args = parser.parse_args()
-    choices = models(args.models)
-    for audio in iglob(join(args.data, '*', '*.wav')):
-        test = features(*read(audio))
-        scores = {name: model.score(test) for name, model in choices.items()}
-        print(audio, max(scores, key=scores.get))
+    choices, audios = models(args.models), iglob(join(args.data, '*', '*.wav'))
+    print(f'Accuracy: {mean(score(choices, audios, args.verbose)):%}')

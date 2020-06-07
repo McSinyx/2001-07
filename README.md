@@ -10,8 +10,11 @@
 
 ### naive
 
+> There should be one-- and preferably only one --obvious way to do it.    
+> Although that way may not be obvious at first unless you're Dutch.
+
     usage: python -m naive.train [-h] source dest
-    usage: python -m naive.test [-h] models data
+    usage: python -m naive.test [-h] [-v] models data
     usage: python -m naive.run [-h] [-l] [-d DEVICE] models
 
 This approach extract [Mel-frequency cepstrum] from audios and try to score
