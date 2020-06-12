@@ -1,16 +1,15 @@
 \documentclass[a4paper,12pt]{article}
 \usepackage[english,vietnamese]{babel}
 \usepackage{amsmath}
-\usepackage{amssymb}
 \usepackage{booktabs}
+\usepackage{epigraph}
 \usepackage{lmodern}
-\usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{lmodern}
-\usepackage{forest}
-\usepackage{textcomp}
+\usepackage{siunitx}
+\usepackage{tikz}
 \usepackage[nottoc,numbib]{tocbibind}
-
+\usetikzlibrary{arrows,positioning,shapes}
 \renewcommand{\thefootnote}{\fnsymbol{footnote}}
 
 \begin{document}
@@ -39,9 +38,18 @@
 
 \section{Introduction}
 \subsection{Brief Description}
-This report is licensed under a
-\href{http://creativecommons.org/licenses/by-sa/4.0/}{Creative Commons
-Attribution-ShareAlike 4.0 International License.}
+In this project, we have been experimenting with automatic speaker
+identification, with the main aim of being able to let the computer recognize
+each member of the team via their voice without depending on the content of
+the spoken content.  This report is going to demonstrate the procedure has been
+carried out to achieve the goal, along with the understandings, mostly in
+digital signal processing, backing the results.
+
+For reproduciblity, the code as well as the data are published on
+GitHub\footnote{\url{https://github.com/McSinyx/speakerid}}.  The software is
+released under AGPLv3+ with exceptions to some audios derived from
+all-right-reserved tests, while this report is licensed under a CC BY-SA 4.0
+license.
 
 \selectlanguage{vietnamese}
 \subsection{Authors and Credits}
@@ -72,19 +80,244 @@ have a chance to take an in-depth exploration on this topic.
 \pagebreak
 
 \selectlanguage{english}
+\setlength\epigraphwidth{0.54\textwidth}
+\epigraph{\textit{Why is everything with you so complicated?}}
+         {Rihanna, \textit{Complicated}}
+\section{Theoretical Background}
+\subsection{Mel Frequency Cepstral}
+The first step of automatic speaker identification is to extract the features
+of the voice, or precisely, the components of the audio signal that can
+identify the linguistic content while discarding all the irrelevant
+informations such as noise.  One way to tackle this problem is to utilize
+mel-frequency cepstral coefficients (MFCCs).
+
+MFCCs are coefficients that collectively make up an mel-frequency cepstrum,
+a short-term power spectrum representation of a sound, based on a linear
+cosine transform of a log power spectrum on a nonlinear mel scale of frequency.
+As low frequencies are spaced linearly and high frequencies logarithmically,
+it is believed that the representation is similar to the way human preceive
+sound~\cite{psy}.  For this reason, MFCCs are widely-used to represent
+the voice signal, and to extract the features of a signal for speaker
+recognition~\cite{mfcpop}.
+
+The process of calculating MFCC is presented
+in the following diagram~\cite{mfcproc}
+\begin{center}
+  \begin{tikzpicture}[->,>=latex,node distance=0.05\textwidth,
+    block/.style = {draw, rectangle, minimum height=0.1\textwidth,
+                    minimum width=0.23\textwidth, align=center},
+    rblock/.style = {draw, rectangle, minimum height=0.07\textwidth,
+                     minimum width=0.2\textwidth, align=center,
+                     rounded corners=0.5em}]
+    \node [rblock] (start) {Speech Input};
+    \node [block, right=of start] (frame) {Frame\\ Blocking};
+    \node [block, right=of frame] (window) {Windowing};
+    \node [block, below=of window] (fft) {Fast Fourier\\ Transform};
+    \node [block, below=of fft] (mel) {Mel-Frequency\\ Wrapping};
+    \node [block, left=of mel] (cep) {Cepstrum};
+    \node [rblock, left=of cep] (mfcc) {MFCCs};
+    \path[draw] (start) edge (frame)
+                   (frame) edge (window)
+                   (window) edge (fft)
+                   (fft) edge (mel)
+                   (mel) edge (cep)
+                   (cep) edge (mfcc);
+  \end{tikzpicture}
+\end{center}
+
+
+\subsubsection{Frame Blocking}
+The continuous input speech signal is blocked into frames of N samples, where
+the frames overlaps by a value R.  This process is finished when all the speech
+is accounted for at least one frame~\cite{do}.
+
+\subsubsection{Windowing}
+Instead of applying discrete Fourier transform on the speech signal, we perform
+such task on smaller frames of about \SIrange{20}{25}{\milli\second}, as an
+average is speaking is about \numrange{3}{4} words per second~\cite{rate}.
+The use of framing will cause the suddenly drop of frequency in the border of
+the frames that might cause noises when applying DFT.  In order to smooth such
+frames before applying DFT we use Hamming window to ensuring the continuity at
+the first and last points, where $N$ is the length of the frame~\cite{hamming}:
+\[w[n] = 0.54 - 0.46\cos\frac{2\pi n}{N},\qquad 0 \le n \le N\]
+
+\subsubsection{Fast Fourier Transform}
+In this step, we take the Fourier Transform of each frame, which will convert
+the frames from time domain to frequency domain.  The Fast Fourier Transform
+is a nice algorithm to apply in this step.  We will obtain spectrum
+as a result~\cite{do}.
+
+\subsubsection{Mel-frequency Wrapping}
+Studies have shown that human perceives the frequency content of sounds for
+speech signal not in a linear scale.  Therefore, the \emph{mel} scale is used to
+measure a subjective pitch of each tone.  The mel-frequency scale is linearly
+spaced below \SI{1000}{\hertz} and logarithmically spaced above
+\SI{1000}{\hertz}.  A common method to simulate the subjective spectrum
+is to use mel filter bank~\cite{do}.
+
+\subsubsection{Cepstrum}
+In the final step, we apply the Discrete Cosine Transform (DCT) to convert the
+log mel spectrum back to time.  DCT is used because the mel spectrum
+coefficients are real numbers.  Also, since the windows overlaps, DCT can helps
+to decorrelate them.  The results of this step is MFCCs~\cite{do}.
+
+\subsection{Gaussian Mixture Model (GMM)}
+After extracting features from MFCCs, these data will be trained using GMM.
+Expectation Maximization (EM) algorithm is used to train the extracted features
+from human voice in system.
+
+\subsubsection{GMM Overview}
+A Gaussian mixture model is a probabilistic clustering model for representing
+the presence of sub-populations within an overall population.  The idea of
+training a GMM is to approximate the probability distribution of a class by a
+linear combination of $k$ Gaussian distributions/clusters, also called the
+components of the GMM~\cite{gmm}.
+
+\subsubsection{EM Algorithm}
+Initially, it identifies k clusters in the data by the K-means algorithm and
+assigns equal weight \(w = \frac{1}{k}\) to each cluster.  The number of
+clusters created then equal to the number of Gaussian Distribution.  The
+algorithm proceeds iteratively in 2 steps~\cite{emalgorithm}:
+
+\textbf{E-step}: Assume that $\pi_{k}, \Sigma_{k}$ and $\pi$ and are set to
+the ones from the previous iteration of the algorithm.  We have the normalized
+probability of each each point $x_{i}$ belonging to one of the K Gaussians
+weighted by the mixture distribution $\pi_{k}$
+\[r_{ik} = \frac{\pi_{k}\mathcal{N}(x_{i}|\mu_{k}, \Sigma_{k})}
+                {\sum_{j=1}^{K}\pi_{j}\mathcal{N}(x_{i}|\mu_{j}, \Sigma_{j})}\]
+
+\textbf{M-step}: Assume that the responsibilities $r_{ik}$ are fixed.  We will
+maximize our likelihood function across the variables $\mu_{k}, \Sigma_{k}$ and
+$ \pi_{k}$ using the following equations
+\begin{align*}
+  \pi_{k} &= \frac{1}{N}\sum_{i}r_{ik}\\
+  \mu_{k} &= \frac{\sum_{i}r_{ik}x_{i}}{\sum_{i}r_{ik}}\\
+  \Sigma_{k} &= \frac{\sum_{i}r_{ik}(x_{i}-\mu_{k})(x_{i}-\mu_{k})}{\sum_{i}r_{ik}}
+\end{align*}
+
+Each iteration of EM increases the log-likelihood of the model.  In practice,
+the model usually stops once the parameters or the log-likelihood have stopped
+changing very much.
+\[\log p(\underline{X}) = \sum_{i}\log\left(
+\sum_{c}\pi_{c}\mathcal{N}(x_{i}|\mu_{c}, \Sigma{c})\right)\]
+
+\newpage
+\setlength\epigraphwidth{0.64\textwidth}
+\epigraph{\textit{A foolish consistency is the hobgoblin of little minds.}}
+         {Ralph Waldo Emerson, \textit{Self-Reliance}}
+\section{Data Preparation}
+In order the produce reliable result, we prepare the data under the following
+consistent criteria.
+
+\subsection{Quantity and Content}
+Each team member provides at least 13 audio files, 8 for training and
+5 for testing.  The data is recorded by each member of the group independently,
+using their own hardware.
+
+We have chosen the sample length in the range of \SIrange{10}{30}{\second}
+which we thought is neither too long or too short for automated as well as
+manual experimentation.  Most of the content is daily conversation, which is
+close to the use case of the speaker recognition system.
+
+\subsection{Preprocessing}
+Audio files have been preprocessed by using Audacity in 3 steps:
+\begin{enumerate}
+  \item Noise reduction to get rid of background noise
+    frequencies~\cite{noise}.
+  \item Normalization the audio amplitude.
+  \item  Standardization the audio file format.  We chose the WAV
+    format~\cite{wave} and sampling rate of \SI{44.1}{\kilo\hertz}~\cite{khz}
+    for their simplicity and wide compatibility.  By Nyquist–Shannon sampling
+    theorem~\cite{shannon}, the sampling rate is more than enough to cover the
+    audible range of \SIrange{20}{20000}{\hertz}~\cite{audible}.
+\end{enumerate}
+
+\newpage
+\setlength\epigraphwidth{0.84\textwidth}
+\epigraph{\textit{There should be one---and preferably only one---obvious way
+                  to do it.\\ Although that way may not be obvious at first
+                  unless you're Dutch.}}
+         {Tim Peters, \textit{The Zen of Python}}
+\section{Implementation and Verification}
+Fortunately, the complicated algorithms described above are already implemented
+in third-party libraries for Python.  Therefore, the system can be programmed
+\emph{naively}, resulting the following modules:
+\begin{itemize}
+  \item \verb|naive.helpers| providing two functions extracting MFCCs
+    from a given audio (with the FFT size set to 2048) and loading models
+    from a given directory.
+  \item \verb|naive.train| applying MFCCs to GMM to decompose a set of data
+    into multiple normally-distributed clusters with different means and
+    standard deviations and output the models as Python \verb|pickle|s.
+  \item \verb|naive.test| automatically testing the correctness of the models.
+  \item \verb|naive.run| performing interactive speaker identification using
+    the trained models.
+\end{itemize}
+
+In the first test, we used 1 voice file around 35 seconds long for each member
+of the group to train the model.  Then, we test the model with the exact
+files and it got 100\% accuracy.  This result is expected as the file used
+for training and testing are the same.
+
+In the second test, we used file number 1, 2, 4 for model training and file
+number 3 for testing and the result of 100\% accuracy still holds (the file
+numbers are noted in the GitHub project README).
+
+In the next test, we had 8 training sample and 5 test audios for each member.
+With significantly more resources to train the model (in vocabulary as well as
+reading paces for paragraphs/dialogues), the system performed surprisingly well
+with one out of 30 guesses was incorrect.  Given many test audios were not
+preprocessed for noise cancellation, we considered the system to be quite
+noise-resilient.
+
+In the verification phase, with the deadline being short, we did not experiment
+with different parameter for the MFCC and GMM function.  However, initial
+results with the interactive system seems to be promising enough, yielding
+mostly correct results unless there was voice interference from other people.
+
+\newpage
 \section{Conclusion}
-\pagebreak
+With the above results and the understandings we gained during the execution,
+we consider this project as a success.  We believe that with further finetuning,
+a GMM-MFCCs model like the one we used can give sufficient accuracy for common
+use cases of speaker recognition.
 
 \begin{thebibliography}{99}
-  \bibitem{wu} C. Thomas Wu.
-    \emph{\href{https://users.cs.duke.edu/~ola/bubble/bubble.html}{Bubble Sort: An Archaeological Algorithmic Analysis}}.
-    Duke University.
-  \bibitem{peculiar} Donald E. Knuth.  The Dangers of Computer-Science Theory.
-    \emph{Studies in Logic and the Foundations of Mathematics}, vol. 74.
-    Elsevier, 1973.
-    doi:\href{https://doi.org/10.1016/S0049-237X(09)70357-X}{10.1016/S0049-237X(09)70357-X}.
-  \bibitem{old} \href{https://en.wikipedia.org/wiki/Lists_of_state_leaders_by_age#10_oldest_currently_serving_state_leaders}{Lists of state leaders by age}.
-    \emph{Wikipedia}.
-    Section 1: \emph{10 oldest currently serving state leaders}.
+  \bibitem{psy} Hugo Fastl, Eberhard Zwicker.
+    ``Section 6.2: Critical-Band Rate Scale''.
+    \emph{Psychoacoustics: Facts and Models}.
+    Springer-Verlag Berlin Heidelberg, 2007.  ISBN 978-3-540-68888-4
+  \bibitem{mfcpop} Todor Ganchev, Nikos Fakotakis, George Kokkinakis.
+    \emph{\href{https://web.archive.org/web/20110717210107/http://www.wcl.ece.upatras.gr/ganchev/Papers/ganchev17.pdf}{Comparative Evaluation of Various MFCC Implementations on the Speaker Verification Task}}.
+    SPECOM, 2005.
+  \bibitem{mfcproc} Md.~Sahidullah, Goutam Saha.
+    ``Design, analysis and experimental evaluation of block based transformation in MFCC computation for speaker recognition''.
+    \emph{Speech Communication}.
+    doi:\href{https://doi.org/10.1016/j.specom.2011.11.004}{10.1016/j.specom.2011.11.004}.
+  \bibitem{rate} \href{http://www.ncvs.org/ncvs/tutorials/voiceprod/tutorial/quality.html}{Voice Qualities}.
+    \emph{The National Center for Voice and Speech}.
+  \bibitem{hamming} Julius O.~Smith III.
+    \href{https://ccrma.stanford.edu/~jos/sasp/Hamming_Window.html}{``Hamming Window''}.
+    \emph{Spectral Audio Signal Processing}.
+    W3K Publishing, 2011.  ISBN 978-0-9745607-3-1.
+  \bibitem{do} Minh~N.~Do.
+    \href{https://pdfs.semanticscholar.org/438f/e1229531ae20867ae58756b09d93c979077d.pdf}{1How to Buildan AutomaticSpeaker Recognition System}.
+  \bibitem{gmm} James Lyon
+    \emph{\href{https://appliedmachinelearning.blog/2017/06/14/voice-gender-detection-using-gmms-a-python-primer/}{Voice Gender Detection using GMMs : A Python Primer}}, 2017.
+  \bibitem{emalgorithm} Brian Keng.
+    \emph{\href{http://bjlkeng.github.io/posts/the-expectation-maximization-algorithm/}{The Expectation-Maximization Algorithm}}, 2016.
+  \bibitem{noise} \href{https://manual.audacityteam.org/man/noise_reduction.html}{Noise Reduction}.
+    \emph{Audacity Manual}.
+  \bibitem{wave} Multimedia Programming Interface and Data Specifications 1.0.
+    \emph{IBM, Microsoft}.
+  \bibitem{khz} \href{http://www.aes.org/publications/standards/search.cfm?docID=14}{AES5-2018}.
+    \emph{Audio Engineering Society}.
+  \bibitem{shannon}  Claude~E.~Shannon
+    ``Communication in the presence of noise''.
+    \emph{Proceedings of the Institute of Radio Engineers}.
+    doi:\href{https://doi.org/10.1109%2Fjrproc.1949.232969}{10.1109/jrproc.1949.232969}.
+  \bibitem{audible} Stuart Rosen.
+    \emph{Signals and Systems for Speech and Hearing}, 2nd ed., p.~163.
+    BRILL, 2011.
 \end{thebibliography}
 \end{document}
